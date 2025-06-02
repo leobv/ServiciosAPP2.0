@@ -1,3 +1,5 @@
+// src/components/formularios/Paso1.jsx
+
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
@@ -5,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
 import { useCaratula } from '@/context/CaratulaContext';
-import { cn } from '@/lib/utils';
+import { formatDate_ddMMyyyy } from '@/lib/formatDate'; // importamos helper
 
 const hogaresDisponibles = ['San Martín', 'Rawson'];
 const mesesDisponibles = [
@@ -18,129 +20,119 @@ const normalizarForm = (f) => ({
   remito: f?.remito || '',
   monto: f?.monto || '',
   servicio: f?.servicio || '',
-  mes: f?.mes || 'abril2025',
-  hogar: f?.hogar || 'San Martín',
+  mes: f?.mes || '',
+  hogar: f?.hogar || '',
 });
 
 export default function Paso1() {
   const navigate = useNavigate();
-  const { caratula, setCaratula } = useCaratula();
-  const [form, setForm] = useState(() => normalizarForm(caratula));
+  const { caratula, seleccionarCaratula, limpiarCaratula } = useCaratula();
+
+  // Si ya hay carátula (seleccionada en contexto), la usamos como base
+  const [form, setForm] = useState(() => normalizarForm(caratula || {}));
   const [texto, setTexto] = useState('');
   const [cabecerasGuardadas, setCabecerasGuardadas] = useState([]);
-  const [irADashboard, setIrADashboard] = useState(false);
 
+  // Construimos la key para localStorage, igual que antes:
   const claveActual = `cabecera_${form.hogar}_${form.mes}`;
 
+  // Si existe en localStorage, cargamos (y mostramos) la carátula
   useEffect(() => {
-    const saved = localStorage.getItem(claveActual);
-    if (saved) {
-      const parsed = JSON.parse(saved);
+    const guardada = localStorage.getItem(claveActual);
+    if (guardada) {
+      const parsed = JSON.parse(guardada);
       const limpio = normalizarForm(parsed);
       setForm(limpio);
-      setTexto(generarTexto(limpio));
+
+      // Genera texto con la fecha formateada (ejemplo “DD/MM/YYYY”)
+      const fechaFormateada = formatDate_ddMMyyyy(parsed.fechaBase);
+      setTexto(`
+PERIODO DE TRABAJO: ${limpio.mes.toUpperCase()} - HOGAR: ${limpio.hogar}
+
+Código de expediente: ${limpio.expediente}
+Número de remito: ${limpio.remito}
+Monto total del servicio: $${limpio.monto}
+Servicio solicitado: ${limpio.servicio}
+
+Carátula creada el: ${fechaFormateada}
+      `.trim());
     }
   }, [claveActual]);
 
+  // Cargar lista de carátulas existentes para seleccionar/editar
   useEffect(() => {
-    cargarCaratulasValidas();
-  }, []);
-
-  useEffect(() => {
-    if (irADashboard) {
-      navigate('/dashboard');
-    }
-  }, [irADashboard]);
-
-  const cargarCaratulasValidas = () => {
-    const claves = Object.keys(localStorage).filter(k => k.startsWith('cabecera_'));
-    const cargadas = claves.map(k => {
-      try {
-        const data = JSON.parse(localStorage.getItem(k));
-        return data?.mes && data?.hogar ? { ...data, key: k } : null;
-      } catch {
+    const todasKeys = Object.keys(localStorage).filter(k => k.startsWith('cabecera_'));
+    const cargadas = todasKeys
+      .map((k) => {
+        try {
+          const datos = JSON.parse(localStorage.getItem(k));
+          if (datos?.mes && datos?.hogar) return { ...datos, key: k };
+        } catch { /* ignoro inválidas */ }
         return null;
-      }
-    }).filter(Boolean);
+      })
+      .filter(Boolean);
     setCabecerasGuardadas(cargadas);
-  };
+  }, [texto]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm(prev => normalizarForm({ ...prev, [name]: value }));
   };
 
-  const generarTexto = (datos = form) => `
+  const generarTexto = (datos = form, fechaISO = new Date().toISOString()) => {
+    const fechaFormateada = formatDate_ddMMyyyy(fechaISO);
+    return `
 PERIODO DE TRABAJO: ${(datos.mes || '—').toUpperCase()} - HOGAR: ${datos.hogar || '—'}
 
 Código de expediente: ${datos.expediente || '—'}
 Número de remito: ${datos.remito || '—'}
 Monto total del servicio: $${datos.monto || '—'}
 Servicio solicitado: ${datos.servicio || '—'}
-`.trim();
+
+Carátula creada el: ${fechaFormateada}
+    `.trim();
+  };
 
   const guardar = () => {
-    const camposFaltantes = ['expediente', 'remito', 'monto', 'servicio'].filter(k => !form[k]);
-    if (camposFaltantes.length > 0) {
-      alert(`Faltan completar los siguientes campos: ${camposFaltantes.join(', ')}`);
+    // Validaciones básicas
+    if (!form.expediente || !form.remito || !form.monto || !form.servicio) {
+      alert('Todos los campos deben estar completos');
       return;
     }
-
     const limpio = normalizarForm(form);
-    const clave = `cabecera_${limpio.hogar}_${limpio.mes}`;
-    const yaExiste = localStorage.getItem(clave);
+    const fechaNow = new Date().toISOString();
 
-    if (yaExiste) {
-      const confirmar = confirm(`Ya existe una carátula para ${limpio.hogar} - ${limpio.mes.toUpperCase()}. ¿Deseás sobrescribirla?`);
-      if (!confirmar) return;
-    }
+    // Guardamos en localStorage incluyendo fechaBase
+    localStorage.setItem(
+      `cabecera_${limpio.hogar}_${limpio.mes}`,
+      JSON.stringify({ ...limpio, fechaBase: fechaNow })
+    );
 
-    localStorage.setItem(clave, JSON.stringify(limpio));
-    setCaratula(limpio);
-    setTexto(generarTexto(limpio));
-    cargarCaratulasValidas();
-    setIrADashboard(true); // ✅ diferido
+    // Actualizamos contexto para que el resto de pasos vean la misma carátula
+    seleccionarCaratula({ ...limpio, fechaBase: fechaNow });
+    // Actualizamos el texto de vista previa
+    setTexto(generarTexto(limpio, fechaNow));
   };
 
   const borrar = () => {
     localStorage.removeItem(claveActual);
-    const limpio = normalizarForm(null);
+    limpiarCaratula();
+    const limpio = normalizarForm({});
     setForm(limpio);
     setTexto('');
-    setCaratula(limpio);
-    cargarCaratulasValidas();
   };
 
   const seleccionarCabecera = (cab) => {
-    const limpio = normalizarForm(cab);
-    setForm(limpio);
-    setTexto(generarTexto(limpio));
-    setCaratula(limpio);
-  };
-
-  const limpiarCaratulasInvalidas = () => {
-    const claves = Object.keys(localStorage).filter(k => k.startsWith('cabecera_'));
-    let eliminadas = 0;
-
-    claves.forEach(k => {
-      try {
-        const data = JSON.parse(localStorage.getItem(k));
-        if (!data?.mes || !data?.hogar) {
-          localStorage.removeItem(k);
-          eliminadas++;
-        }
-      } catch {
-        localStorage.removeItem(k);
-        eliminadas++;
-      }
+    // Al seleccionar, ponemos esa carátula en contexto y recargamos el formulario
+    seleccionarCaratula({
+      hogar: cab.hogar,
+      mes: cab.mes,
+      expediente: cab.expediente,
+      servicio: cab.servicio,
+      fechaBase: cab.fechaBase,
     });
-
-    if (eliminadas > 0) {
-      alert(`${eliminadas} carátulas inválidas fueron eliminadas.`);
-      cargarCaratulasValidas();
-    } else {
-      alert('No se encontraron carátulas inválidas.');
-    }
+    setForm(normalizarForm(cab));
+    setTexto(generarTexto(normalizarForm(cab), cab.fechaBase));
   };
 
   return (
@@ -149,10 +141,13 @@ Servicio solicitado: ${datos.servicio || '—'}
         <strong>Carátula activa:</strong> {form.hogar} — {form.mes?.toUpperCase() || '—'} — Expediente: {form.expediente || '—'}
       </div>
 
-      <form className="space-y-4" onSubmit={(e) => {
-        e.preventDefault();
-        guardar();
-      }}>
+      <form
+        className="space-y-4"
+        onSubmit={(e) => {
+          e.preventDefault();
+          guardar();
+        }}
+      >
         <Input name="expediente" value={form.expediente} onChange={handleChange} placeholder="Código de expediente" />
         <Input name="remito" value={form.remito} onChange={handleChange} placeholder="Número de remito" />
         <Input name="monto" value={form.monto} onChange={handleChange} placeholder="Monto total ($)" />
@@ -161,7 +156,9 @@ Servicio solicitado: ${datos.servicio || '—'}
         <div className="grid grid-cols-2 gap-4">
           <select name="mes" value={form.mes} onChange={handleChange} className="border rounded p-2">
             {mesesDisponibles.map((m) => (
-              <option key={m} value={`${m}2025`}>{m.toUpperCase()} 2025</option>
+              <option key={m} value={`${m}2025`}>
+                {m.toUpperCase()} 2025
+              </option>
             ))}
           </select>
           <select name="hogar" value={form.hogar} onChange={handleChange} className="border rounded p-2">
@@ -175,20 +172,21 @@ Servicio solicitado: ${datos.servicio || '—'}
           <Button type="submit">Guardar carátula</Button>
           <Button type="button" variant="destructive" onClick={borrar}>Borrar</Button>
           <Button type="button" variant="outline" onClick={() => navigate('/dashboard')}>Volver al menú principal</Button>
-          <Button type="button" variant="ghost" onClick={limpiarCaratulasInvalidas}>🧹 Limpiar inválidas</Button>
         </div>
 
         {texto && <Textarea className="mt-4" value={texto} rows={8} readOnly />}
       </form>
 
       <hr className="my-6" />
-      <h3 className="text-lg font-semibold">📂 Carátulas guardadas</h3>
 
+      {/* Carátulas guardadas */}
+      <h3 className="text-lg font-semibold">📂 Carátulas guardadas</h3>
       {cabecerasGuardadas.length === 0 ? (
         <p className="text-gray-500 italic">No hay carátulas guardadas aún.</p>
       ) : (
         <div className="grid gap-4">
           {cabecerasGuardadas.map((cab, i) => {
+            if (!cab?.mes || !cab?.hogar) return null;
             const isActiva = cab.mes === form.mes && cab.hogar === form.hogar;
             const clave = `cabecera_${cab.hogar}_${cab.mes}`;
 
@@ -205,7 +203,9 @@ Servicio solicitado: ${datos.servicio || '—'}
                     {cab.hogar} — {cab.mes.toUpperCase()}
                     {isActiva && <span className="ml-2 text-xs text-blue-700">(activa)</span>}
                   </div>
-                  <div className="text-sm text-gray-600">Expediente: {cab.expediente || '—'}</div>
+                  <div className="text-sm text-gray-600">
+                    Exp: {cab.expediente || '—'} • Fecha: {formatDate_ddMMyyyy(cab.fechaBase)}
+                  </div>
                 </div>
                 <div className="flex gap-2">
                   {!isActiva && (
@@ -213,18 +213,28 @@ Servicio solicitado: ${datos.servicio || '—'}
                       🟢 Usar
                     </Button>
                   )}
-                  <Button size="sm" variant="outline" onClick={() => {
-                    setForm(normalizarForm(cab));
-                    setTexto(generarTexto(cab));
-                  }}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setForm(normalizarForm(cab));
+                      setTexto(generarTexto(cab, cab.fechaBase));
+                    }}
+                  >
                     ✏️ Ver/editar
                   </Button>
-                  <Button size="sm" variant="destructive" onClick={() => {
-                    if (confirm(`¿Eliminar la carátula ${cab.hogar} - ${cab.mes}?`)) {
-                      localStorage.removeItem(clave);
-                      cargarCaratulasValidas();
-                    }
-                  }}>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => {
+                      if (confirm(`¿Eliminar la carátula ${cab.hogar} - ${cab.mes}?`)) {
+                        localStorage.removeItem(clave);
+                        setCabecerasGuardadas(old =>
+                          old.filter(item => item.key !== clave)
+                        );
+                      }
+                    }}
+                  >
                     🗑 Eliminar
                   </Button>
                 </div>

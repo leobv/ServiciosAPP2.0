@@ -1,29 +1,41 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useState } from 'react';
 
-const CaratulaContext = createContext();
+// Creamos el contexto (named export por si en algún lugar necesitás
+// acceder directamente al objeto Context).
+export const CaratulaContext = createContext(null);
 
 export function CaratulaProvider({ children }) {
-  const [caratula, setCaratula] = useState(() => {
-    const last = localStorage.getItem('caratula_activa');
-    return last ? JSON.parse(last) : null;
-  });
+  // { hogar, mes, expediente, servicio }
+  const [caratula, setCaratula] = useState(null);
 
-  useEffect(() => {
-    if (caratula) {
-      localStorage.setItem('caratula_activa', JSON.stringify(caratula));
-    }
-  }, [caratula]);
+  // Función para “activar” una carátula concreta
+  const seleccionarCaratula = (datos) => {
+    setCaratula({
+      hogar: datos.hogar,
+      mes: datos.mes,
+      expediente: datos.expediente,
+      servicio: datos.servicio || '',
+    });
+  };
+
+  // Función para “desactivar” o limpiar la carátula
+  const limpiarCaratula = () => {
+    setCaratula(null);
+  };
 
   return (
-    <CaratulaContext.Provider value={{ caratula, setCaratula }}>
+    <CaratulaContext.Provider
+      value={{ caratula, seleccionarCaratula, limpiarCaratula }}
+    >
       {children}
     </CaratulaContext.Provider>
   );
 }
 
+// Hook simplificado para consumir el contexto
 export function useCaratula() {
   const context = useContext(CaratulaContext);
-  if (!context) {
+  if (context === undefined) {
     throw new Error('useCaratula debe usarse dentro de CaratulaProvider');
   }
   return context;

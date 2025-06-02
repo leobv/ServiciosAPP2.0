@@ -1,15 +1,15 @@
 import { useParams } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
-import Paso1 from "@/components/formularios/Paso1";
-import Paso2 from "@/components/formularios/Paso2";
-import Paso3 from "@/components/formularios/Paso3";
-import Paso5 from "@/components/formularios/paso5";
-import Paso7 from "@/components/formularios/paso7";
-import Paso8 from "@/components/formularios/paso8";
-import Paso9 from "@/components/formularios/paso9";
-import Paso10 from "@/components/formularios/paso10";
-import Paso11 from "@/components/formularios/paso11";
-import Paso12 from "@/components/formularios/Paso12";
+import Paso1 from "@/components/pages/paso1";
+import Paso2 from "@/components/pages/paso2";
+import Paso3 from "@/components/pages/paso3";
+import Paso5 from "@/components/pages/paso5";
+import Paso7 from "@/components/pages/paso7";
+import Paso8 from "@/components/pages/paso8";
+import Paso9 from "@/components/pages/paso9";
+import Paso10 from "@/components/pages/paso10";
+import Paso11 from "@/components/pages/paso11";
+import Paso12 from "@/components/pages/paso12";
 
 export default function Paso() {
   const { numero } = useParams();

@@ -2,9 +2,9 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { CaratulaProvider, useCaratula } from './context/CaratulaContext';
 import './App.css';
 
-import Paso from './pages/Paso';
-import Dashboard from './pages/Dashboard';
-import MainLayout from './Layout/MainLayout';
+import Paso from './components/pages/paso';
+import Dashboard from './components/pages/Dashboard';
+import MainLayout from './components/pages/MainLayout';
 
 function App() {
   return (
