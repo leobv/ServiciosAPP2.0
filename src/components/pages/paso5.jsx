@@ -1,114 +1,141 @@
-import { useState, useEffect } from 'react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { usePasoKey } from '@/hooks/usePasoKey';
-import { useCabecera } from '@/hooks/useCabecera';
-import CaratulaActivaBanner from '@/components/CaratulaActivaBanner';
-import PresupuestoPdfRichard from '@/components/PresupuestoPdfRichard';
+// src/components/formularios/Paso5.jsx
 
-const empresas = [
-  { nombre: 'Lavadero Richard', fondo: '/20250411_130047.jpg' },
-  // ... más empresas si es necesario
-];
+import React, { useState, useEffect } from 'react'
+import { useCabecera } from '@/hooks/useCabecera'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import PresupuestoPdfRichard from '@/components/PresupuestoPdfRichard.jsx'
+
+/**
+ * Convierte "abril2025" → { year: 2025, month: 4, day: 1 } (1er día del mes)
+ * Usamos para inicializar el campo fecha.
+ */
+function fechaInicioDelMes(mes) {
+  if (typeof mes !== 'string' || mes.length <= 4) return ''
+  const año = parseInt(mes.slice(-4), 10)
+  const nombreMes = mes.slice(0, mes.length - 4).toLowerCase()
+  // Mapeo de nombres de mes a número
+  const mapeo = {
+    enero: 1,
+    febrero: 2,
+    marzo: 3,
+    abril: 4,
+    mayo: 5,
+    junio: 6,
+    julio: 7,
+    agosto: 8,
+    septiembre: 9,
+    octubre: 10,
+    noviembre: 11,
+    diciembre: 12,
+  }
+  const mm = mapeo[nombreMes] || 1
+  // Formatear a "YYYY-MM-DD"
+  const mmStr = mm.toString().padStart(2, '0')
+  return `${año}-${mmStr}-01`
+}
+
+/**
+ * Convierte “abril2025” → “ABRIL 2025”
+ */
+function formatoPeriodo(mes) {
+  if (!mes) return ''
+  const año = mes.slice(-4)
+  const mesTexto = mes.slice(0, mes.length - 4)
+  return `${mesTexto.toUpperCase()} ${año}`
+}
 
 export default function Paso5() {
-  const STORAGE_KEY = usePasoKey(5);
-  console.log('📌 Paso5: STORAGE_KEY =', STORAGE_KEY);
-  console.log('📌 Paso5: antes de montar, localStorage:', localStorage.getItem(STORAGE_KEY));
+  // Obtenemos del contexto la carátula activa: { hogar, mes, expediente, remito, monto, servicio }
+  const { mes, hogar } = useCabecera()
 
-  const { periodo: periodoContext } = useCabecera();
+  // Si mes === "abril2025", fechaInicial será "2025-04-01"
+  const fechaInicial = fechaInicioDelMes(mes)
+  const periodoInicial = formatoPeriodo(mes)
 
+  // Estado local del formulario
   const [form, setForm] = useState({
-    fecha: '',
-    periodo: periodoContext || '',
-    empresa: empresas[0].nombre,
-  });
-  const [texto, setTexto] = useState('');
-  const [mostrarPDF, setMostrarPDF] = useState(false);
+    fecha: fechaInicial,             // se inicializa al primer día del mes activo
+    periodo: periodoInicial,         // “ABRIL 2025”
+    empresa: 'Lavadero Richard',      // valor por defecto
+  })
+  const [mostrarPDF, setMostrarPDF] = useState(false)
 
+  // Lista de empresas con su imagen de fondo (ajusta las rutas según tu proyecto)
+  const empresas = [
+    { nombre: 'Lavadero Richard', fondo: '/20250411_130047.jpg' },
+    // aquí podrías agregar más: 
+    // { nombre: 'Otra Empresa S.A.', fondo: '/ruta/de/la/imagen.jpg' },
+  ]
+
+  // Construimos la clave para localStorage: “paso5_<hogar>_<mes>”
+  const claveStorage = `paso5_${hogar}_${mes}`
+
+  // Al montar, tratamos de recuperar del localStorage
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    console.log('📌 Paso5 useEffect carga:', saved);
+    const saved = localStorage.getItem(claveStorage)
     if (saved) {
       try {
-        const parsed = JSON.parse(saved);
-        if (parsed.form) setForm(parsed.form);
-        if (parsed.texto) setTexto(parsed.texto);
+        const parsed = JSON.parse(saved)
+        setForm(parsed)
       } catch (err) {
-        console.error('Error cargando Paso5:', err);
+        console.error('Error al leer Paso5 de localStorage:', err)
       }
+    } else {
+      // si no hay nada guardado, nos aseguramos de forzar el valor inicial correcto
+      setForm({
+        fecha: fechaInicial,
+        periodo: periodoInicial,
+        empresa: form.empresa,
+      })
     }
-  }, [STORAGE_KEY]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [claveStorage])
+
+  // Cada vez que cambie `form`, lo guardamos en localStorage
+  useEffect(() => {
+    localStorage.setItem(claveStorage, JSON.stringify(form))
+  }, [form, claveStorage])
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-  };
+    const { name, value } = e.target
+    setForm((prev) => ({ ...prev, [name]: value }))
+  }
 
-  const generarInforme = (e) => {
-    e.preventDefault();
-
-    const generated = `
-BUENOS AIRES, ${form.fecha}
-
+  // Texto que irá dentro del PDF (y que vimos en la vista previa)
+  const textoParaPDF = `
+BUENOS AIRES ${form.fecha}
 Dirección General Políticas Asistenciales para Personas Mayores
 De mi consideración:
 
 Según su pedido, enviamos cotización por el servicio de lavado, planchado, retiro y entrega
 de ropa de cama y ropa de cuerpo, con un servicio diario.
 
-El servicio tiene un valor total para el mes de ${form.periodo}, para los hogares que
+El servicio tiene un valor total para el mes de ${form.periodo} para los hogares que
 se detallan según su solicitud:
 
-- Hogar San Martín: $12.925.000
-- Hogar Rawson: $10.975.000
+Hogar San Martín: $12.925.000  
+Hogar Rawson: $10.975.000  
 
-Monto final cotizado para el mes de ${form.periodo}:
-Pesos Veintitrés Millones Novecientos Mil ($23.900.000).
+Monto final cotizado para el mes de ${form.periodo} es de pesos
+Novecientos Mil ($23.900.000).
+  `.trim()
 
-Sin otro particular, saludo a usted atentamente.
-    `.trim();
-
-    setTexto(generated);
-    const payload = { form, texto: generated };
-    console.log('📌 Paso5 guardar payload:', payload);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-    console.log('📌 Paso5 después de guardar, localStorage:', localStorage.getItem(STORAGE_KEY));
-  };
-
-  const borrarInforme = () => {
-    localStorage.removeItem(STORAGE_KEY);
-    console.log('📌 Paso5 tras borrar, localStorage:', localStorage.getItem(STORAGE_KEY));
-    setForm({ fecha: '', periodo: periodoContext || '', empresa: empresas[0].nombre });
-    setTexto('');
-    setMostrarPDF(false);
-  };
-
-  const fondo = empresas.find((e) => e.nombre === form.empresa)?.fondo;
+  // Buscamos la ruta de la imagen de fondo según la empresa seleccionada
+  const fondoSeleccionado = empresas.find((e) => e.nombre === form.empresa)?.fondo
 
   return (
-    <form onSubmit={generarInforme} className="space-y-6">
-      <CaratulaActivaBanner />
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Input
-          name="fecha"
-          value={form.fecha}
-          onChange={handleChange}
-          placeholder="Fecha (Ej: 30/12/2024)"
-        />
-        <Input
-          name="periodo"
-          value={form.periodo}
-          onChange={handleChange}
-          placeholder="Periodo (Ej: ENERO 2025)"
-        />
+    <div className="space-y-6 max-w-3xl mx-auto">
+      {/* Selección de empresa destinataria */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Empresa destinataria:
+        </label>
         <select
           name="empresa"
           value={form.empresa}
           onChange={handleChange}
-          className="border rounded p-2 col-span-2"
+          className="w-full border rounded p-2 text-sm"
         >
           {empresas.map((e) => (
             <option key={e.nombre} value={e.nombre}>
@@ -118,34 +145,68 @@ Sin otro particular, saludo a usted atentamente.
         </select>
       </div>
 
-      <div className="flex gap-2">
-        <Button type="submit">Generar Informe</Button>
-        <Button variant="destructive" type="button" onClick={borrarInforme}>
-          Borrar Informe
+      {/* Inputs: fecha y período */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Fecha de emisión:
+          </label>
+          <input
+            type="date"
+            name="fecha"
+            value={form.fecha}
+            onChange={handleChange}
+            className="border rounded p-2 w-full text-sm"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Período (mes activo):
+          </label>
+          <input
+            type="text"
+            name="periodo"
+            value={form.periodo}
+            onChange={handleChange}
+            className="border rounded p-2 w-full text-sm"
+            placeholder="Ej: ABRIL 2025"
+          />
+        </div>
+      </div>
+
+      {/* Vista previa del texto dentro de un contenedor */}
+      <div className="border rounded p-4 bg-white whitespace-pre-wrap text-sm leading-relaxed shadow-sm">
+        <pre>{textoParaPDF}</pre>
+      </div>
+
+      {/* Botón para activar vista previa / descarga de PDF */}
+      <div className="flex justify-start">
+        <Button
+          onClick={() => {
+            if (!form.fecha || !form.periodo) {
+              alert('Debes completar la fecha y el período antes de generar el PDF.')
+              return
+            }
+            setMostrarPDF(true)
+          }}
+          className="bg-green-600 text-white"
+        >
+          Vista previa / Descargar PDF
         </Button>
       </div>
 
-      {texto && (
-        <>
-          <Textarea
-            className="border rounded p-4 bg-white whitespace-pre-wrap text-sm leading-relaxed"
-            value={texto}
-            readOnly
-            rows={12}
-          />
-          <Button
-            variant="secondary"
-            onClick={() => setMostrarPDF(true)}
-            disabled={!fondo}
-          >
-            Descargar PDF con membrete
-          </Button>
-        </>
+      {/* Si el usuario pide ver el PDF, lo mostramos en un contenedor scrollable */}
+      {mostrarPDF && (
+        <div className="mt-4 border rounded overflow-auto" style={{ height: '600px' }}>
+          {fondoSeleccionado ? (
+            <PresupuestoPdfRichard texto={textoParaPDF} fondo={fondoSeleccionado} />
+          ) : (
+            <p className="text-red-600 p-4">
+              No se encontró la imagen de fondo para la empresa seleccionada.
+            </p>
+          )}
+        </div>
       )}
-
-      {mostrarPDF && fondo && (
-        <PresupuestoPdfRichard texto={texto} fondo={fondo} />
-      )}
-    </form>
-  );
+    </div>
+  )
 }
