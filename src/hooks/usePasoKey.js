@@ -1,10 +1,9 @@
-import { useCaratula } from '@/context/CaratulaContext';
+import { useCabecera } from '@/hooks/useCabecera';
 
 export function usePasoKey(numeroPaso) {
-  const { caratula } = useCaratula();
+  const { mes, hogar } = useCabecera();
 
-  const mes = (caratula?.mes || '').toLowerCase().replace(/\s+/g, '');
-  const hogar = (caratula?.hogar || '').toLowerCase().replace(/\s+/g, '');
-
-  return `paso${numeroPaso}_${hogar}_${mes}`;
+  const mesNorm = (mes || '').toLowerCase().replace(/\s+/g, '');
+  const hogarNorm = (hogar || '').toLowerCase().replace(/\s+/g, '');
+  return `paso${numeroPaso}_${hogarNorm}_${mesNorm}`;
 }

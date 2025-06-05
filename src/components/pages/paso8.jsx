@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { useCaratula } from '@/context/CaratulaContext'
+import { useCabecera } from '@/hooks/useCabecera'
 import { usePasoKey } from '@/hooks/usePasoKey'
 import CaratulaActivaBanner from '@/components/CaratulaActivaBanner'
 
@@ -19,29 +19,8 @@ function formatoPeriodo(mes) {
 }
 
 export default function Paso8() {
-  // ----------- 1) Obtenemos la carátula activa ----------- 
-  // useCaratula() devuelve { hogar, mes, expediente, remito, monto, servicio } o null si no hay carátula
-  const { caratula } = useCaratula()  
-
-  // Si no hay carátula, mostramos mensaje para que el usuario vaya a Paso 1
-  if (!caratula) {
-    return (
-      <div className="p-10 text-center space-y-6">
-        <h2 className="text-xl font-semibold text-gray-700">
-          No hay una carátula activa seleccionada
-        </h2>
-        <p className="text-gray-500">
-          Debés crear o activar una carátula en el Paso 1 antes de continuar.
-        </p>
-        <Button onClick={() => window.location.assign('/paso/1')}>
-          Ir a Paso 1
-        </Button>
-      </div>
-    )
-  }
-
-  // ----------- 2) Obtenemos datos de la carátula ----------- 
-  const { expediente: expCaratula, servicio: servCaratula, hogares: hogaresCaratula, mes: mesCaratula } = caratula
+  // ----------- 1) Obtenemos la cabecera activa -----------
+  const { expediente: expCaratula, servicio: servCaratula, hogares: hogaresCaratula, mes: mesCaratula } = useCabecera()
 
   // Convertimos "abril2025" → "ABRIL 2025"
   const periodoInicial = formatoPeriodo(mesCaratula)
@@ -65,12 +44,16 @@ export default function Paso8() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved)
-        setForm(parsed)
+        const datos = { ...parsed }
+        if (datos.periodo && !datos.periodo.includes(' ')) {
+          datos.periodo = formatoPeriodo(datos.periodo)
+        }
+        setForm(datos)
       } catch (err) {
         console.error('Error al cargar Paso 8 desde localStorage:', err)
       }
     } else {
-      // si no hay guardado, asegurarse de poblar con datos de la carátula
+      // si no hay guardado, asegurarse de poblar con datos de la cabecera
       setForm({
         expediente: expCaratula || '',
         servicio: servCaratula || '',
@@ -110,7 +93,7 @@ Se remite a los fines de su prosecución.
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
-      {/* Banner que muestra cuál es la carátula activa */}
+      {/* Banner que muestra cuál es la cabecera activa */}
       <CaratulaActivaBanner />
 
       {/* Formulario */}
