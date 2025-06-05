@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { CaratulaProvider, useCaratula } from './context/CaratulaContext';
+import { useCaratula } from './context/CaratulaContext';
 import './App.css';
 
 import Paso from './components/pages/paso';
@@ -8,9 +8,8 @@ import MainLayout from './components/pages/MainLayout';
 
 function App() {
   return (
-    <CaratulaProvider>
-      <BrowserRouter>
-        <Routes>
+    <BrowserRouter>
+      <Routes>
           {/* Redirección inicial */}
           <Route path="/" element={<RedirectSegunCaratula />} />
 
@@ -24,7 +23,6 @@ function App() {
           <Route path="*" element={<RedirectSegunCaratula />} />
         </Routes>
       </BrowserRouter>
-    </CaratulaProvider>
   );
 }
 

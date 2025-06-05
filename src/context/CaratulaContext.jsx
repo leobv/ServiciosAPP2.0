@@ -5,22 +5,32 @@ import { createContext, useContext, useState } from 'react';
 export const CaratulaContext = createContext(null);
 
 export function CaratulaProvider({ children }) {
-  // { hogar, mes, expediente, servicio }
-  const [caratula, setCaratula] = useState(null);
+  // Estado inicial: intenta leer la carátula activa del localStorage
+  const [caratula, setCaratula] = useState(() => {
+    try {
+      const raw = localStorage.getItem('caratula_activa');
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  });
 
   // Función para “activar” una carátula concreta
   const seleccionarCaratula = (datos) => {
-    setCaratula({
+    const activa = {
       hogar: datos.hogar,
       mes: datos.mes,
       expediente: datos.expediente,
       servicio: datos.servicio || '',
-    });
+    };
+    setCaratula(activa);
+    localStorage.setItem('caratula_activa', JSON.stringify(activa));
   };
 
   // Función para “desactivar” o limpiar la carátula
   const limpiarCaratula = () => {
     setCaratula(null);
+    localStorage.removeItem('caratula_activa');
   };
 
   return (
