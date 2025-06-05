@@ -95,6 +95,7 @@ Servicio solicitado: ${datos.servicio || '—'}
     const limpio = normalizarForm(form);
     localStorage.setItem(`cabecera_${limpio.hogar}_${limpio.mes}`, JSON.stringify(limpio));
     seleccionarCaratula(limpio);
+    localStorage.setItem('caratula_activa', JSON.stringify(limpio));
     setTexto(generarTexto(limpio));
     cargarCaratulasValidas();
   };
@@ -103,6 +104,7 @@ Servicio solicitado: ${datos.servicio || '—'}
   const borrar = () => {
     localStorage.removeItem(claveActual);
     limpiarCaratula();
+    localStorage.removeItem('caratula_activa');
     const limpio = normalizarForm(null);
     setForm(limpio);
     setTexto('');
@@ -117,6 +119,7 @@ Servicio solicitado: ${datos.servicio || '—'}
     setForm(limpio);
     setTexto(generarTexto(limpio));
     seleccionarCaratula(limpio);
+    localStorage.setItem('caratula_activa', JSON.stringify(limpio));
   };
 
   // Permite limpiar cualquier entrada inválida en localStorage

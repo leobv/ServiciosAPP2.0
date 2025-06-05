@@ -1,7 +1,7 @@
 // src/components/formularios/Paso5.jsx
 
 import React, { useState, useEffect } from 'react'
-import { useCabecera } from '@/hooks/useCabecera'
+import { useCaratula } from '@/context/CaratulaContext'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import PresupuestoPdfRichard from '@/components/PresupuestoPdfRichard.jsx'
@@ -46,8 +46,10 @@ function formatoPeriodo(mes) {
 }
 
 export default function Paso5() {
-  // Obtenemos del contexto la carátula activa: { hogar, mes, expediente, remito, monto, servicio }
-  const { mes, hogar } = useCabecera()
+  // Obtenemos del contexto la carátula activa
+  const { caratula } = useCaratula()
+  const mes = caratula?.mes || ''
+  const hogar = caratula?.hogar || ''
 
   // Si mes === "abril2025", fechaInicial será "2025-04-01"
   const fechaInicial = fechaInicioDelMes(mes)

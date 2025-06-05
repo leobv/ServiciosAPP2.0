@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/select';
 import { useEmailContext } from '@/context/EmailContext';
 import { usePasoKey } from '@/hooks/usePasoKey';
-import { useCabecera } from '@/hooks/useCabecera';
+import { useCaratula } from '@/context/CaratulaContext';
 import CaratulaActivaBanner from '@/components/CaratulaActivaBanner';
 
 /**
@@ -58,7 +58,8 @@ export default function Paso3() {
   // Clave específica para Paso 3 (incluye hogar + mes gestionado por useCaratula())
   const STORAGE_KEY = usePasoKey(3);
   const { setUltimaFechaMailPaso3 } = useEmailContext();
-  const { mes } = useCabecera(); // Ahora obtenemos “mes” en lugar de un inexistente “periodo”
+  const { caratula } = useCaratula();
+  const mes = caratula?.mes || '';
 
   // ------------- Estado local -------------
   const [form, setForm] = useState({
