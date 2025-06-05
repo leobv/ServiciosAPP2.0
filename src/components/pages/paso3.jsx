@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/select';
 import { useEmailContext } from '@/context/EmailContext';
 import { usePasoKey } from '@/hooks/usePasoKey';
-import { useCaratula } from '@/context/CaratulaContext';
+import { useCabecera } from '@/hooks/useCabecera';
 import CaratulaActivaBanner from '@/components/CaratulaActivaBanner';
 
 /**
@@ -55,11 +55,10 @@ const empresas = [
 ];
 
 export default function Paso3() {
-  // Clave específica para Paso 3 (incluye hogar + mes gestionado por useCaratula())
+  // Clave específica para Paso 3 (incluye hogar + mes obtenido de useCabecera())
   const STORAGE_KEY = usePasoKey(3);
   const { setUltimaFechaMailPaso3 } = useEmailContext();
-  const { caratula } = useCaratula();
-  const mes = caratula?.mes || '';
+  const { mes, expediente } = useCabecera();
 
   // ------------- Estado local -------------
   const [form, setForm] = useState({
@@ -79,7 +78,13 @@ export default function Paso3() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (parsed.form) setForm(parsed.form);
+        if (parsed.form) {
+          const formData = { ...parsed.form };
+          if (formData.periodo && !formData.periodo.includes(' ')) {
+            formData.periodo = formatoPeriodo(formData.periodo);
+          }
+          setForm(formData);
+        }
         if (parsed.emails) setEmails(parsed.emails);
         if (parsed.texto) setTexto(parsed.texto);
       } catch (err) {
