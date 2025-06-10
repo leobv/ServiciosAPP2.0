@@ -1,56 +1,65 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { cn } from '@/lib/utils';
-import { useCaratula } from '@/context/CaratulaContext'; // Sólo importamos el hook
+// src/components/Dashboard.jsx
+
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
+import { useCaratula } from "@/context/CaratulaContext";
 
 const pasos = [
-  'Carátula',
-  'PET',
-  'Invitación a cotizar',
-  'RIUPP',
-  'Presupuestos',
-  'Constancias de AFIP',
-  'Informe o nota DG',
-  'Respuesta SUBSE',
-  'Inicio de Actividades',
-  'Remito',
-  'IF del Proyecto de AA',
-  'Informe DG Reconocimiento',
-  'Conocimiento de la Subse',
-  'Pase a SGO COMPRAS',
-  'Actualización RUIPP',
-  'Solicitud de Gasto',
-  'Informe SGO COMPRAS',
-  'Aprobación del Gasto',
-  'Aprobación del AA',
-  'Notificación del AA',
-  'Pase a SGO COMPRAS',
-  'Afectación Definitiva',
-  'Orden de Compra',
-  'Parte de Recepción Definitiva',
-  'Devolución a la DG',
-  'Repetición desde punto 10',
+  "Carátula",
+  "PET",
+  "Invitación a cotizar",
+  "RIUPP",
+  "Presupuestos",
+  "Constancias de AFIP",
+  "Informe o nota DG",
+  "Respuesta SUBSE",
+  "Inicio de Actividades",
+  "Remito",
+  "IF del Proyecto de AA",
+  "Informe DG Reconocimiento",
+  "Conocimiento de la Subse",
+  "Pase a SGO COMPRAS",
+  "Actualización RUIPP",
+  "Solicitud de Gasto",
+  "Informe SGO COMPRAS",
+  "Aprobación del Gasto",
+  "Aprobación del AA",
+  "Notificación del AA",
+  "Pase a SGO COMPRAS",
+  "Afectación Definitiva",
+  "Orden de Compra",
+  "Parte de Recepción Definitiva",
+  "Devolución a la DG",
+  "Repetición desde punto 10",
 ];
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const { caratula } = useCaratula();
 
-  // Extraemos datos de la carátula activa
-  const hogar = caratula?.hogar || '';
-  const mes = caratula?.mes || '';
-  const expediente = caratula?.expediente || '';
+  // Datos de la carátula activa
+  const hogar = caratula?.hogar || "";
+  const mes = caratula?.mes || "";
+  const expediente = caratula?.expediente || "";
 
-  // Función helper para normalizar keys de localStorage
-  const normalizarKey = (str) => str.toLowerCase().replace(/\s+/g, '');
+  // Normalizar texto para construir keys de localStorage
+  const normalizarKey = (str) => str.toLowerCase().replace(/\s+/g, "");
 
-  // Obtiene objeto guardado en localStorage para un paso en particular
+  // Recupera el contenido guardado para un paso concreto
   const obtenerPasoGuardado = (pasoIndex) => {
-    const key = `paso${pasoIndex + 1}_${normalizarKey(hogar)}_${normalizarKey(mes)}`;
+    const key = `paso${pasoIndex + 1}_${normalizarKey(hogar)}_${normalizarKey(
+      mes
+    )}`;
     const raw = localStorage.getItem(key);
     if (!raw) return null;
     try {
@@ -60,16 +69,17 @@ export default function Dashboard() {
     }
   };
 
-  // Para resetear la selección si cambia carátula
+  // Estado local para paso seleccionado y texto visible en modal
   const [selected, setSelected] = useState(null);
   const [visibleTexto, setVisibleTexto] = useState(null);
 
+  // Cuando cambia hogar o mes, reseteamos selección y modal
   useEffect(() => {
     setSelected(null);
     setVisibleTexto(null);
   }, [hogar, mes]);
 
-  // Si no hay carátula activa, mostramos un mensaje guía
+  // Si no hay carátula activa, mostramos mensaje y botón para ir a paso 1
   if (!hogar || !mes) {
     return (
       <div className="p-10 text-center space-y-6">
@@ -79,7 +89,7 @@ export default function Dashboard() {
         <p className="text-gray-500">
           Debés crear o activar una carátula en el Paso 1 antes de continuar.
         </p>
-        <Button onClick={() => navigate('/paso/1')}>Ir a Paso 1</Button>
+        <Button onClick={() => navigate("/paso/1")}>Ir a Paso 1</Button>
       </div>
     );
   }
@@ -88,34 +98,39 @@ export default function Dashboard() {
     <div className="p-6 space-y-6">
       <h2 className="text-xl font-semibold">Pasos del trámite actual</h2>
 
-      {/* Banner con carátula activa */}
+      {/* Banner con la carátula activa */}
       <div className="bg-blue-100 text-blue-800 px-4 py-2 rounded shadow text-sm mb-4">
-        <strong>Carátula activa:</strong> {hogar} — {mes.toUpperCase()} — Expediente: {expediente || '—'}
+        <strong>Carátula activa:</strong> {hogar} — {mes.toUpperCase()} —
+        Expediente: {expediente || "—"}
       </div>
 
-      {/* Lista de pasos */}
-      <ul className="space-y-2">
-        {pasos.map((paso, i) => {
-          const infoPaso = obtenerPasoGuardado(i);
-          return (
-            <li
-              key={i}
-              className={cn(
-                'cursor-pointer px-4 py-2 rounded flex justify-between items-center transition border',
-                selected === i
-                  ? 'bg-blue-100 border-blue-400'
-                  : 'hover:bg-gray-100 border-gray-200'
-              )}
-              onClick={() => setSelected(i)}
-            >
-              <span>{i + 1}. {paso}</span>
-              {infoPaso?.texto && (
-                <span className="text-green-600 font-bold text-sm">✔</span>
-              )}
-            </li>
-          );
-        })}
-      </ul>
+      {/* Contenedor scrollable para la lista de pasos */}
+      <div className="max-h-[400px] overflow-y-auto border rounded-lg">
+        <ul className="space-y-2 p-2">
+          {pasos.map((paso, i) => {
+            const infoPaso = obtenerPasoGuardado(i);
+            return (
+              <li
+                key={i}
+                className={cn(
+                  "cursor-pointer px-4 py-2 rounded flex justify-between items-center transition border",
+                  selected === i
+                    ? "bg-blue-100 border-blue-400"
+                    : "hover:bg-gray-100 border-gray-200"
+                )}
+                onClick={() => setSelected(i)}
+              >
+                <span>
+                  {i + 1}. {paso}
+                </span>
+                {infoPaso?.texto && (
+                  <span className="text-green-600 font-bold text-sm">✔</span>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      </div>
 
       {/* Panel de acciones para el paso seleccionado */}
       {selected !== null && (
@@ -146,10 +161,15 @@ export default function Dashboard() {
                   <Button
                     variant="destructive"
                     onClick={() => {
-                      const key = `paso${selected + 1}_${normalizarKey(hogar)}_${normalizarKey(mes)}`;
-                      if (confirm(`¿Eliminar el informe del paso ${selected + 1}?`)) {
+                      const key = `paso${selected + 1}_${normalizarKey(
+                        hogar
+                      )}_${normalizarKey(mes)}`;
+                      if (
+                        confirm(
+                          `¿Eliminar el informe del paso ${selected + 1}?`
+                        )
+                      ) {
                         localStorage.removeItem(key);
-                        // Forzamos recarga de la lista
                         window.location.reload();
                       }
                     }}
@@ -165,10 +185,15 @@ export default function Dashboard() {
 
       {/* Diálogo modal para visualizar el texto completo */}
       {visibleTexto && (
-        <Dialog open={!!visibleTexto} onOpenChange={() => setVisibleTexto(null)}>
+        <Dialog
+          open={!!visibleTexto}
+          onOpenChange={() => setVisibleTexto(null)}
+        >
           <DialogContent className="max-w-3xl">
             <DialogHeader>
-              <DialogTitle>Informe generado — {hogar} / {mes.toUpperCase()}</DialogTitle>
+              <DialogTitle>
+                Informe generado — {hogar} / {mes.toUpperCase()}
+              </DialogTitle>
             </DialogHeader>
             <Textarea
               value={visibleTexto}

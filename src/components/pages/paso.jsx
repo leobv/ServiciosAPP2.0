@@ -4,11 +4,12 @@ import Paso1 from "@/components/pages/paso1";
 import Paso2 from "@/components/pages/paso2";
 import Paso3 from "@/components/pages/paso3";
 import Paso5 from "@/components/pages/paso5";
+import Paso6 from "@/components/pages/paso6";
 import Paso7 from "@/components/pages/paso7";
 import Paso8 from "@/components/pages/paso8";
 //import Paso9 from "@/components/pages/paso9";
 //import Paso10 from "@/components/pages/paso10";
-//import Paso11 from "@/components/pages/paso11";
+import Paso11 from "@/components/pages/paso11";
 import Paso12 from "@/components/pages/paso12";
 
 export default function Paso() {
@@ -24,7 +25,9 @@ export default function Paso() {
       case 3:
         return <Paso3 />;
       case 5:
-        return <Paso5 />; 
+        return <Paso5 />;
+      case 6:
+        return <Paso6 />;
       case 7:
         return <Paso7 />;
       case 8:
